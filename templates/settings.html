@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Paramètres de l'Application</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    {% include 'header.html' %}
+    <div class="container mt-4">
+        <h1 class="mb-4">Paramètres de l'Application</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for c, m in messages %}<div class="alert alert-{{c}}">{{m}}</div>{% endfor %}{% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    <div class="row align-items-end">
+                        <div class="col-md-4">
+                            <label for="items_per_page" class="form-label">Éléments par Page (Files d'attente)</label>
+                            <input type="number" class="form-control" id="items_per_page" name="items_per_page" 
+                                   value="{{ settings.get('ItemsPerPage', 20) }}" required>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary">Enregistrer</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

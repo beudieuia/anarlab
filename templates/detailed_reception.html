@@ -1,0 +1,423 @@
+{% extends 'base.html' %}
+{% block title %}Nouvelle Demande de Prestation{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+  <div class="page-title">
+    <i class="bi bi-inboxes fs-3 text-primary"></i>
+    <div>
+      <h3 class="m-0">Nouvelle réception</h3>
+      <div class="text-muted small">Enregistrer un lot, ses échantillons et les méthodes demandées</div>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-ghost" href="{{ url_for('reception_queue') }}">
+      <i class="bi bi-arrow-left"></i> Retour à la file
+    </a>
+  </div>
+</div>
+
+<form method="post" action="{{ url_for('detailed_reception') }}" enctype="multipart/form-data" id="mainReceptionForm" class="needs-validation" novalidate>
+
+  <!-- === Carte 1 : Informations lot / client === -->
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <strong>Informations du lot</strong>
+      <span class="text-muted small">Champs obligatoires : Client, Code lot</span>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <!-- Champ Client -->
+        <div class="col-md-5">
+          <label for="client_id_input" class="form-label">Client *</label>
+          <select name="client_id" id="client_id_input" class="form-select" required>
+            <option value="" disabled selected>— Sélectionner un Client —</option>
+            {% for client in clients %}
+              <option value="{{ client.ClientID }}">{{ client.ClientName }}</option>
+            {% endfor %}
+          </select>
+          <div class="invalid-feedback">Le client est requis.</div>
+        </div>
+        <!-- Champ Code lot -->
+        <div class="col-md-3">
+          <label for="batch_code_input" class="form-label">Code lot *</label>
+          <input type="text" name="batch_code" id="batch_code_input" class="form-control"
+                 required placeholder="Ex. 2025-RECEP-001"
+                 pattern="^\d{4}-RECEP-\d{3}$">
+          <div class="invalid-feedback">Le code du lot est requis (format AAAA-RECEP-XXX).</div>
+        </div>
+        <!-- Champ Priorité -->
+        <div class="col-md-2">
+          <label for="priority_input" class="form-label">Priorité</label>
+          <select name="priority" id="priority_input" class="form-select">
+            <option value="Normal" selected>Normal</option>
+            <option value="High">Haute</option>
+            <option value="Rush">Urgente</option>
+          </select>
+        </div>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Option de Retour Échantillons</label>
+            <select class="form-select" name="return_samples">
+                {% for option in return_options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Bon de commande (n°)</label>
+          <input type="text" name="purchase_order_no" class="form-control" placeholder="PO-xxxx">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Date de réception</label>
+          <input type="date" name="reception_date" class="form-control" value="{{ today_date }}">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Notes de réception</label>
+          <textarea name="reception_notes" rows="2" class="form-control" placeholder="Informations complémentaires..."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- === Carte 2 : Méthodes demandées === -->
+  <div class="card mb-3">
+    <div class="card-header"><strong>Méthodes demandées (pour l'ensemble du lot)</strong></div>
+    <div class="card-body">
+      <div class="row g-2">
+        {% for group in service_groups %}
+            <div class="col-md-6 mb-3">
+                <h6>{{ group.GroupName }}</h6>
+                {% for method in methods if method.GroupID == group.GroupID %}
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="method_ids" value="{{ method.MethodID }}" id="method-{{ method.MethodID }}">
+                    <label class="form-check-label" for="method-{{ method.MethodID }}">{{ method.MethodName }}</label>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="col-12 text-muted">Aucune méthode n'est définie dans le système.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- === Carte 3 : Échantillons (import Excel OU saisie manuelle) === -->
+  <div class="card mb-3">
+    <div class="card-header"><strong>Échantillons</strong></div>
+    <div class="card-body">
+      <ul class="nav nav-tabs" id="sampleTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="excel-tab" data-bs-toggle="tab" data-bs-target="#tab-excel" type="button" role="tab">
+            <i class="bi bi-file-earmark-spreadsheet"></i> Import Excel (Recommandé)
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="manual-tab" data-bs-toggle="tab" data-bs-target="#tab-manual" type="button" role="tab">
+            <i class="bi bi-pencil-square"></i> Saisie manuelle
+          </button>
+        </li>
+      </ul>
+      <input type="hidden" name="entry_mode" id="entry_mode_input" value="file">
+      <div class="tab-content pt-3">
+        <!-- Tab Excel -->
+        <div class="tab-pane fade show active" id="tab-excel" role="tabpanel">
+          <div class="alert alert-info small">
+            <div class="fw-semibold mb-1">Colonnes attendues :</div>
+            <code>ClientSampleID | Category | Weight | SampleType | StandardName | DuplicateOf | ...</code>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label">Fichier Excel (.xlsx)</label>
+              <input class="form-control" type="file" name="sample_file" id="sample_file_input" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+            </div>
+          </div>
+          <div id="validation-results-div" class="mt-3"></div>
+        </div>
+        <!-- Tab Manuel -->
+        <div class="tab-pane fade" id="tab-manual" role="tabpanel">
+            <div class="d-flex justify-content-end mb-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="add-row-btn">
+                    <i class="bi bi-plus-circle"></i> Ajouter une ligne
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle" id="manual-table">
+                    <thead>
+                      <tr>
+                        <th>ID Client</th><th>Type</th><th>Poids (g)</th><th>Catégorie</th><th>Spécification QC</th><th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="manual-samples-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Champs cachés (mode manuel) -->
+  <input type="hidden" name="manual_rows_json" id="manual_rows_json">
+
+  <div class="d-flex justify-content-end gap-2">
+    <a class="btn btn-ghost" href="{{ url_for('reception_queue') }}">Annuler</a>
+    <button type="submit" class="btn btn-primary btn-lg" id="submit-btn">
+        <i class="bi bi-save2"></i> Enregistrer la Réception
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+
+  // ===== refs
+  const mainForm = document.getElementById('mainReceptionForm');
+  if (!mainForm) return;
+
+  const entryModeInput = document.getElementById('entry_mode_input');
+  const submitBtn = document.getElementById('submit-btn');
+  const resultsDiv = document.getElementById('validation-results-div');
+  const batchCodeInput = mainForm.querySelector('[name="batch_code"]');
+  const receptionDateInput = mainForm.querySelector('[name="reception_date"]');
+  const slaDateInput = mainForm.querySelector('[name="sla_due_date"]');
+
+  // ===== onglets
+  document.getElementById('excel-tab')?.addEventListener('shown.bs.tab', () => entryModeInput.value = 'file');
+  document.getElementById('manual-tab')?.addEventListener('shown.bs.tab', () => {
+    entryModeInput.value = 'manual';
+    // auto-initialise une ligne si vide
+    const tbody = document.getElementById('manual-samples-tbody');
+    if (tbody && !tbody.querySelector('tr')) addSampleRow();
+  });
+
+  // ===== normalisation/validation
+  function normalizeBatchCode() {
+    if (!batchCodeInput) return;
+    let s = batchCodeInput.value.trim().toUpperCase().replaceAll('_','-').replaceAll(' ','-');
+    s = s.replace('RECEPTION','RECEP').replace('RECEIPT','RECEP');
+    const m = s.match(/(\d{4}).*?(\d{1,3})$/);
+    if (m) s = `${m[1]}-RECEP-${String(parseInt(m[2],10)).padStart(3,'0')}`;
+    batchCodeInput.value = s;
+  }
+  function validateSLA() {
+    if (!receptionDateInput || !slaDateInput) return;
+    slaDateInput.setCustomValidity('');
+    if (receptionDateInput.value && slaDateInput.value) {
+      if (slaDateInput.value < receptionDateInput.value) {
+        slaDateInput.setCustomValidity("L'échéance (SLA) ne peut pas être antérieure à la date de réception.");
+      }
+    }
+  }
+  batchCodeInput?.addEventListener('blur', normalizeBatchCode);
+  receptionDateInput?.addEventListener('change', validateSLA);
+  slaDateInput?.addEventListener('change', validateSLA);
+
+  // ===== soumission
+  let forceSubmit = false;
+  mainForm.addEventListener('submit', async (event) => {
+    if (forceSubmit) return; // laisser passer la soumission réelle
+    event.preventDefault();
+
+    normalizeBatchCode();
+    validateSLA();
+
+    if (!mainForm.checkValidity()) {
+      mainForm.classList.add('was-validated');
+      return;
+    }
+
+    if (entryModeInput.value === 'manual') {
+      const ok = collectAndInjectManualRowsJSON();
+      if (!ok) return;
+      forceSubmit = true; mainForm.submit();
+    } else {
+      await handleExcelValidationAndSubmit();
+    }
+  });
+
+  async function handleExcelValidationAndSubmit() {
+    const fileInput = document.getElementById('sample_file_input');
+    if (!fileInput || fileInput.files.length === 0) {
+      resultsDiv.innerHTML = `<div class="alert alert-warning mb-0">Veuillez sélectionner un fichier Excel.</div>`;
+      return;
+    }
+    submitBtn.disabled = true;
+    const original = submitBtn.innerHTML;
+    submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span>Validation en cours…`;
+    resultsDiv.innerHTML = '';
+
+    const formData = new FormData(mainForm);
+    try {
+      // 1) DOR
+      const resDor = await fetch("{{ url_for('api_validate_dor_v2') }}", { method: 'POST', body: formData });
+      const dor = await resDor.json();
+      if (!resDor.ok || !dor.success) {
+        displayErrors(resultsDiv, dor.errors, 'Erreurs de validation (DOR)');
+        return;
+      }
+      // 2) Doublons
+      const resDup = await fetch("{{ url_for('api_check_duplicates_v2') }}", { method: 'POST', body: formData });
+      const dup = await resDup.json();
+      if (!resDup.ok || !dup.success) {
+        displayDuplicateWarning(resultsDiv, dup.duplicates);
+        return;
+      }
+      // OK -> submit réel
+      resultsDiv.innerHTML = `<div class="alert alert-success mb-0">✅ Validations réussies ! Enregistrement en cours…</div>`;
+      forceSubmit = true; mainForm.submit();
+    } catch (e) {
+      resultsDiv.innerHTML = `<div class="alert alert-danger mb-0">Erreur de connexion au serveur.</div>`;
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = original;
+    }
+  }
+
+  function displayErrors(container, errors, title) {
+    let html = `<div class="alert alert-danger"><h6 class="mb-2">${title}</h6><ul class="mb-0">`;
+    (errors || []).forEach(err => {
+      const details = err.details && err.details.length ? ` <small>(IDs: ${[...new Set(err.details)].join(', ')})</small>` : '';
+      html += `<li><strong>${err.rule || 'Erreur'} :</strong> ${err.message || ''}${details}</li>`;
+    });
+    html += `</ul></div>`;
+    container.innerHTML = html;
+  }
+  function displayDuplicateWarning(container, duplicates) {
+    const ids = [...new Set(duplicates || [])];
+    const html = `
+      <div class="alert alert-warning">
+        <h6 class="mb-2">Avertissement : Doublons potentiels</h6>
+        <p class="mb-2">Certains échantillons existent déjà : <strong>${ids.join(', ') || '—'}</strong></p>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="confirm-duplicates-checkbox">
+          <label class="form-check-label" for="confirm-duplicates-checkbox">Je confirme vouloir enregistrer ces échantillons.</label>
+        </div>
+      </div>`;
+    container.innerHTML = html;
+    document.getElementById('confirm-duplicates-checkbox')?.addEventListener('change', (e) => {
+      if (e.target.checked) { forceSubmit = true; mainForm.submit(); }
+    });
+  }
+
+  // ===== Saisie manuelle
+  const addRowBtn = document.getElementById('add-row-btn');
+  const tbody = document.getElementById('manual-samples-tbody');
+  const manualJson = document.getElementById('manual_rows_json');
+
+  // listes
+  const categories = ['Client Sample', 'Blank', 'Standard', 'Duplicate'];
+  const blankTypes = ['Process Blank', 'Reagent Blank', 'Method Blank'];
+  const standardsOptions = `{% for std in qc_standards %}<option value="{{ std.StandardID }}">{{ std.StandardName }}</option>{% endfor %}`;
+  const sampleTypeOptions = `{% for type in sample_types %}<option>{{ type.TypeName }}</option>{% endfor %}`;
+
+  // datalist pour "Duplicate Of"
+  const duplicateDatalist = document.createElement('datalist');
+  duplicateDatalist.id = 'client-sample-ids-datalist';
+  document.body.appendChild(duplicateDatalist);
+
+  let nextIndex = 1;
+  function addSampleRow() {
+    const idx = nextIndex++;
+    const tr = document.createElement('tr');
+    tr.dataset.rowIndex = String(idx);
+    tr.innerHTML = `
+      <td>
+        <input type="text" name="manual_sample_id_${idx}" class="form-control form-control-sm csid-input" required>
+      </td>
+      <td>
+        <select name="manual_sample_type_${idx}" class="form-select form-select-sm">${sampleTypeOptions}</select>
+      </td>
+      <td>
+        <input type="number" step="0.01" min="0" name="manual_sample_weight_${idx}" class="form-control form-control-sm" placeholder="Ex. 250.0">
+      </td>
+      <td>
+        <select name="manual_sample_category_${idx}" class="form-select form-select-sm category-select">
+          ${categories.map(c => `<option>${c}</option>`).join('')}
+        </select>
+      </td>
+      <td class="qc-spec-cell">—</td>
+      <td>
+        <button type="button" class="btn btn-danger btn-sm remove-row-btn" title="Supprimer"><i class="bi bi-x-lg"></i></button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+    hydrateRow(tr);
+    updateDatalist();
+  }
+
+  function hydrateRow(tr) {
+    const cat = tr.querySelector('.category-select');
+    const csid = tr.querySelector('.csid-input');
+    const remove = tr.querySelector('.remove-row-btn');
+
+    cat.addEventListener('change', () => renderSpecCell(tr));
+    csid.addEventListener('input', updateDatalist);
+    remove.addEventListener('click', () => { tr.remove(); updateDatalist(); });
+
+    renderSpecCell(tr);
+  }
+
+  function renderSpecCell(tr) {
+    const idx = tr.dataset.rowIndex;
+    const spec = tr.querySelector('.qc-spec-cell');
+    const category = tr.querySelector('.category-select').value;
+    if (category === 'Standard') {
+      spec.innerHTML = `<select name="manual_standard_id_${idx}" class="form-select form-select-sm">${standardsOptions}</select>`;
+    } else if (category === 'Duplicate') {
+      updateDatalist();
+      spec.innerHTML = `<input list="client-sample-ids-datalist" name="manual_duplicate_of_${idx}" class="form-control form-control-sm" placeholder="ID original">`;
+    } else if (category === 'Blank') {
+      spec.innerHTML = `<select name="manual_blank_type_${idx}" class="form-select form-select-sm">${blankTypes.map(b=>`<option>${b}</option>`).join('')}</select>`;
+    } else {
+      spec.innerHTML = '—';
+    }
+  }
+
+  function updateDatalist() {
+    const ids = [...tbody.querySelectorAll('.csid-input')].map(i => i.value.trim()).filter(Boolean);
+    duplicateDatalist.innerHTML = ids.map(id => `<option value="${escapeHTML(id)}"></option>`).join('');
+  }
+
+  function collectAndInjectManualRowsJSON() {
+    const rows = [...tbody.querySelectorAll('tr')];
+    if (rows.length === 0) {
+      alert("Veuillez ajouter au moins une ligne d'échantillon.");
+      return false;
+    }
+    const out = [];
+    for (const tr of rows) {
+      const idx = tr.dataset.rowIndex;
+      const id   = mainForm.querySelector(`[name="manual_sample_id_${idx}"]`)?.value?.trim();
+      const type = mainForm.querySelector(`[name="manual_sample_type_${idx}"]`)?.value?.trim();
+      const w    = mainForm.querySelector(`[name="manual_sample_weight_${idx}"]`)?.value?.trim();
+      const cat  = mainForm.querySelector(`[name="manual_sample_category_${idx}"]`)?.value?.trim();
+      const std  = mainForm.querySelector(`[name="manual_standard_id_${idx}"]`)?.value?.trim();
+      const dup  = mainForm.querySelector(`[name="manual_duplicate_of_${idx}"]`)?.value?.trim();
+      const bkt  = mainForm.querySelector(`[name="manual_blank_type_${idx}"]`)?.value?.trim();
+
+      if (!id) { alert("Chaque ligne doit avoir un ID Client."); return false; }
+
+      out.push({
+        ClientSampleID: id,
+        SampleType: type || '',
+        Weight: w ? parseFloat(w) : null,
+        Category: cat || 'Client Sample',
+        StandardID: std || null,
+        DuplicateOf: dup || null,
+        BlankType: bkt || null
+      });
+    }
+    manualJson.value = JSON.stringify(out);
+    return true;
+  }
+
+  addRowBtn?.addEventListener('click', addSampleRow);
+  // crée une première ligne si l'onglet Manuel est le premier ouvert par l'utilisateur
+  if (entryModeInput.value === 'manual' && !tbody.querySelector('tr')) addSampleRow();
+
+  function escapeHTML(str){return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));}
+});
+</script>
+{% endblock %}

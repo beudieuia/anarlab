@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestion des Instruments</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    {% include 'header.html' %}
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-4">
+                <h2 class="mb-4">Ajouter un Instrument</h2>
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <form method="post" action="{{ url_for('manage_instruments') }}">
+                            <div class="mb-3">
+                                <label for="instrument_name" class="form-label">Nom de l'Instrument</label>
+                                <input type="text" id="instrument_name" name="instrument_name" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="instrument_code" class="form-label">Code/ID</label>
+                                <input type="text" id="instrument_code" name="instrument_code" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Statut</label>
+                                <select id="status" name="status" class="form-select">
+                                    <option>Opérationnel</option>
+                                    <option>En Maintenance</option>
+                                    <option>Hors Service</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Enregistrer</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <h2 class="mb-4">Instruments Existants</h2>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}{% for c, m in messages %}<div class="alert alert-{{c}} alert-dismissible fade show">{{m}}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}{% endif %}
+                {% endwith %}
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Nom de l'Instrument</th>
+                            <th>Code/ID</th>
+                            <th>Statut</th>
+                            <th style="width: 25%;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inst in instruments %}
+                        <tr>
+                            <td>{{ inst.InstrumentName }}</td>
+                            <td>{{ inst.InstrumentCode }}</td>
+                            <td>{{ inst.Status }}</td>
+                            <td>
+                                <a href="{{ url_for('edit_instrument', instrument_id=inst.InstrumentID) }}" class="btn btn-warning btn-sm">Modifier</a>
+                                <form action="{{ url_for('delete_instrument', instrument_id=inst.InstrumentID) }}" method="post" class="d-inline" onsubmit="return confirm('Sûr?');">
+                                    <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center">Aucun instrument trouvé.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

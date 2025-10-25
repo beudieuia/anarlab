@@ -1,0 +1,12 @@
+<form hx-post="{{ url_for('edit_sample_type_post', type_id=sample_type.SampleTypeID) }}"
+      hx-target="#sample-type-row-{{ sample_type.SampleTypeID }}"
+      hx-swap="outerHTML">
+    <div class="mb-3">
+        <label for="type_name" class="form-label">Nom du Type</label>
+        <input type="text" class="form-control" id="type_name" name="type_name" value="{{ sample_type.TypeName }}" required>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </div>
+</form>

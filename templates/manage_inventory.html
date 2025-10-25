@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block title %}Gestion de l'Inventaire{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Gestion de l'Inventaire (Consommables & Réactifs)</h1>
+
+<div class="row">
+    <!-- Column for adding new items -->
+    <div class="col-lg-4">
+        <!-- Add New Stock Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header"><h4>Ajouter un Nouvel Article en Stock</h4></div>
+            <div class="card-body">
+                <form action="{{ url_for('add_stock') }}" method="post">
+                    <div class="mb-3">
+                        <label for="consumable_type_id" class="form-label">Type de Consommable</label>
+                        <select class="form-select" name="consumable_type_id" required>
+                            <option value="" disabled selected>-- Sélectionnez un type --</option>
+                            {% for type in types %}<option value="{{ type.ConsumableTypeID }}">{{ type.TypeName }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="lot_number" class="form-label">Numéro de Lot/Batch</label>
+                        <input type="text" class="form-control" name="lot_number" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="quantity" class="form-label">Quantité</label>
+                            <input type="number" step="any" class="form-control" name="quantity" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="unit" class="form-label">Unité</label>
+                            <input type="text" class="form-control" name="unit" placeholder="Ex: mL, g, pack" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="supplier_id" class="form-label">Fournisseur (Optionnel)</label>
+                        <select class="form-select" name="supplier_id">
+                            <option value="">-- Aucun --</option>
+                            {% for supplier in suppliers %}<option value="{{ supplier.SupplierID }}">{{ supplier.SupplierName }}</option>{% endfor %}
+                        </select>
+                    </div>
+                     <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="date_received" class="form-label">Date de Réception</label>
+                            <input type="date" class="form-control" name="date_received" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="expiry_date" class="form-label">Date d'Expiration</label>
+                            <input type="date" class="form-control" name="expiry_date">
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Ajouter au Stock</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if current_user.role == 'admin' %}
+        <!-- Add Consumable Type Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header"><h5>Gérer les Types de Consommables</h5></div>
+            <div class="card-body">
+                <form action="{{ url_for('add_consumable_type') }}" method="post">
+                    <input type="text" name="type_name" class="form-control mb-2" placeholder="Nom du type (Ex: Acide Nitrique)" required>
+                    <textarea name="description" class="form-control mb-2" rows="2" placeholder="Description (optionnel)"></textarea>
+                    <button type="submit" class="btn btn-secondary btn-sm">Ajouter Type</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Supplier Card -->
+        <div class="card shadow-sm">
+            <div class="card-header"><h5>Gérer les Fournisseurs</h5></div>
+            <div class="card-body">
+                <form action="{{ url_for('add_supplier') }}" method="post">
+                    <input type="text" name="supplier_name" class="form-control mb-2" placeholder="Nom du fournisseur" required>
+                    <input type="text" name="contact_info" class="form-control mb-2" placeholder="Infos contact (email, tél)">
+                    <button type="submit" class="btn btn-secondary btn-sm">Ajouter Fournisseur</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Column for current stock -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header"><h4>Stock Actuel</h4></div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Type</th>
+                                <th>Lot</th>
+                                <th>Fournisseur</th>
+                                <th>Expire le</th>
+                                <th>Quantité Restante</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in stock %}
+                            <tr>
+                                <td>{{ item.TypeName }}</td>
+                                <td>{{ item.LotNumber }}</td>
+                                <td>{{ item.SupplierName or 'N/A' }}</td>
+                                <td>{{ item.ExpiryDate.strftime('%Y-%m-%d') if item.ExpiryDate else 'N/A' }}</td>
+                                <td>{{ "%.2f"|format(item.Quantity) }} {{ item.Unit }}</td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm">Supprimer</button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="6" class="text-center p-4">Le stock est vide.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

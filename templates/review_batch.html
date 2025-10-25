@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block title %}Review and Approve: {{ batch.BatchCode }}{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Review Batch: <span class="text-primary">{{ batch.BatchCode }}</span></h1>
+        <a href="{{ url_for('reporting_queue') }}" class="btn btn-secondary">Back to Reporting Queue</a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Client Results Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h4>Client Sample Results</h4>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Sample ID</th>
+                                    {% for element in elements_in_order %}
+                                        <th>{{ element }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for index, row in pivoted_results.iterrows() %}
+                                <tr>
+                                    <td><strong>{{ row.name }}</strong></td>
+                                    {% for element in elements_in_order %}
+                                        <td>{{ row[element] }}</td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QC Results Card -->
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4>Quality Control (QC) Summary</h4>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>QC Sample ID</th>
+                                    <th>Category</th>
+                                    <th>Element</th>
+                                    <th>Measured Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for qc in qc_results %}
+                                <tr>
+                                    <td>{{ qc.ClientSampleID }}</td>
+                                    <td>
+                                        {% if qc.Category == 'Blank' %}<span class="badge bg-dark">{{ qc.Category }}</span>
+                                        {% elif qc.Category == 'Standard' %}<span class="badge bg-info text-dark">{{ qc.Category }}</span>
+                                        {% elif qc.Category == 'Duplicate' %}<span class="badge bg-warning text-dark">{{ qc.Category }}</span>
+                                        {% else %}<span class="badge bg-light text-dark">{{ qc.Category }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ qc.ElementSymbol }}</td>
+                                    <td>{{ '%.3f'|format(qc.ResultValue) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Approval Actions Card -->
+            <div class="card shadow-sm sticky-top">
+                <div class="card-header bg-light">
+                    <h4>Actions</h4>
+                </div>
+                <div class="card-body text-center">
+                    <p class="text-muted">Review all data carefully. Once approved, a certificate can be generated for the client. This action will be logged.</p>
+                    <hr>
+                    <form action="{{ url_for('process_approval', batch_id=batch.BatchID) }}" method="POST">
+                        <div class="d-grid gap-2">
+                            <button type="submit" name="action" value="Approve" class="btn btn-success btn-lg" onclick="return confirm('Are you sure you want to APPROVE these results?');">
+                                <i class="bi bi-check-circle-fill"></i> Approve
+                            </button>
+                            <button type="submit" name="action" value="Reject" class="btn btn-danger btn-lg" onclick="return confirm('Are you sure you want to REJECT these results?');">
+                                <i class="bi bi-x-circle-fill"></i> Reject
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer">
+                     <small class="text-muted">
+                        Certificate Status: <strong>{{ batch.CertificateStatus or 'Pending Review' }}</strong>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}```
+
+---
+
+### Step 2: Update the Reporting Queue
+
+Now we need to update the main reporting page (`reporting_queue.html`) to show the new approval status and change the "action" buttons based on that status.
+
+*   If a batch is `Analysis Complete` or `Rejected`, the button should say "Send for Review".
+*   If a batch is `Approved`, the buttons to generate the certificate and Excel file should appear.
+
+**Action 1: Modify the `reporting_queue` function in `app.py`**
+
+We need to fetch the `CertificateStatus` from the database.
+
+```python
+# In app.py, find and REPLACE the reporting_queue function with this one
+
+@app.route('/reporting_queue')
+@login_required
+@role_required('admin', 'analyst')
+def reporting_queue():
+    conn = get_db_connection()
+    if not conn:
+        flash("Database Connection Error.", "danger")
+        return render_template('reporting_queue.html', batches=[], total_pages=1, current_page=1)
+    
+    # ... (code for pagination and search filters remains the same) ...
+    page = request.args.get('page', 1, type=int)
+    search_term = request.args.get('search', '').strip()
+    start_date = request.args.get('start_date', '').strip()
+    end_date = request.args.get('end_date', '').strip()
+    params = {}
+
+    try:
+        base_query = "FROM SampleBatches b JOIN Clients c ON b.ClientID = c.ClientID WHERE b.Location = 'Reporting' AND b.Status <> 'Archived'"
+        if search_term:
+            base_query += " AND (b.BatchCode LIKE :search OR c.ClientName LIKE :search)"
+            params['search'] = f'%{search_term}%'
+        if start_date:
+            base_query += " AND b.DateReceived >= :start_date"
+            params['start_date'] = start_date
+        if end_date:
+            base_query += " AND b.DateReceived <= :end_date"
+            params['end_date'] = end_date
+            
+        count_query = text(f"SELECT COUNT(*) {base_query}")
+        total_batches = conn.execute(count_query, params).scalar()
+        
+        PER_PAGE = int(get_setting('ItemsPerPage', 20))
+        total_pages = math.ceil(total_batches / PER_PAGE) if total_batches > 0 else 1
+        offset = (page - 1) * PER_PAGE
+        params['offset'] = offset
+        params['per_page'] = PER_PAGE
+        
+        # --- MODIFIED QUERY TO INCLUDE CertificateStatus ---
+        data_query = text(f"SELECT b.BatchID, b.BatchCode, c.ClientName, b.Status, b.CertificateStatus {base_query} ORDER BY b.DateReceived DESC OFFSET :offset ROWS FETCH NEXT :per_page ROWS ONLY")
+        batches = conn.execute(data_query, params).fetchall()
+    except Exception as e:
+        flash(f"An error occurred while fetching the reporting queue: {e}", "danger")
+        traceback.print_exc()
+        batches, total_pages = [], 1
+    finally:
+        if conn: conn.close()
+        
+    return render_template('reporting_queue.html', batches=batches, search_term=search_term, start_date=start_date, end_date=end_date, current_page=page, total_pages=total_pages)

@@ -1,0 +1,16 @@
+<form hx-post="{{ url_for('edit_element_post', element_id=element.ElementID) }}"
+      hx-target="#element-row-{{ element.ElementID }}"
+      hx-swap="outerHTML">
+    <div class="mb-3">
+        <label for="element_symbol" class="form-label">Symbole</label>
+        <input type="text" class="form-control" id="element_symbol" name="element_symbol" value="{{ element.ElementSymbol }}" required>
+    </div>
+    <div class="mb-3">
+        <label for="element_name" class="form-label">Nom Complet</label>
+        <input type="text" class="form-control" id="element_name" name="element_name" value="{{ element.ElementName }}" required>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </div>
+</form>

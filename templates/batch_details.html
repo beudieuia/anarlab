@@ -1,0 +1,139 @@
+<!-- C:\anarlab\templates\batch_details.html (VERSION FINALE ET CORRIGÉE) -->
+{% extends 'base.html' %}
+{% from "_macros.html" import status_badge %} <!-- CETTE LIGNE EST LA SOLUTION. ELLE DOIT ÊTRE LÀ. -->
+
+{% block title %}Détails du Lot: {{ demande.BatchCode }}{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="page-title">Détails du Lot: <span class="text-primary">{{ demande.BatchCode }}</span></h1>
+        <div>
+            {% if current_user.role == 'admin' and demande.Status == 'Archived' %}
+                <form action="{{ url_for('unarchive_batch', batch_id=demande.BatchID) }}" method="post" class="d-inline" onsubmit="return confirm('Restaurer ce lot?');">
+                    <button type="submit" class="btn btn-info"><i class="bi bi-box-arrow-up"></i> Restaurer</button>
+                </form>
+            {% endif %}
+            <a href="javascript:history.back()" class="btn btn-secondary">Retour</a>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header"><h4>Informations Générales</h4></div>
+                <div class="card-body">
+                    <p><strong>Client:</strong> {{ demande.ClientName }}</p>
+                    <p><strong>Date de Réception:</strong> {{ demande.DateReceived.strftime('%Y-%m-%d') if demande.DateReceived else 'N/A' }}</p>
+                    <p><strong>Statut Actuel:</strong> {{ status_badge(demande.Status) }}</p>
+                    <p><strong>Localisation Actuelle:</strong> {{ demande.Location }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+             <div class="card h-100">
+                <div class="card-header"><h4>Détails de la Prestation</h4></div>
+                <div class="card-body">
+                    <p><strong>Type Global:</strong> {{ demande.SampleType or 'N/A' }}</p>
+                    <p><strong>Mode de Paiement:</strong> {{ demande.PaymentMode or 'N/A' }}</p>
+                    <p><strong>Récupération Échantillons:</strong> {{ demande.ReturnSamples or 'N/A' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header"><h4>Travaux Demandés</h4></div>
+        <div class="card-body">
+            {% if grouped_methods %}
+                <ul class="list-unstyled">
+                {% for group_name, methods in grouped_methods.items() %}
+                    <li><strong>{{ group_name }}:</strong>
+                        <ul style="list-style-type: '➢ '; padding-left: 20px;">
+                            {% for method in methods %}<li>{{ method }}</li>{% endfor %}
+                        </ul>
+                    </li>
+                {% endfor %}
+                </ul>
+            {% else %}<p>Aucune prestation spécifiée.</p>{% endif %}
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header"><h4>Traçabilité des Consommables</h4></div>
+        <div class="card-body">
+            {% if used_consumables %}
+                <ul class="list-group list-group-flush">
+                {% for item in used_consumables %}
+                    <li class="list-group-item">
+                        <strong>{{ item.TypeName }}</strong> - Lot: {{ item.LotNumber }}
+                    </li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted mb-0">Aucun consommable n'a été enregistré pour la préparation de ce lot.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header"><h4>Liste des Échantillons Client ({{ samples|length }})</h4></div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-striped mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID Client</th>
+                            <th>Type</th>
+                            <th>Catégorie</th>
+                            <th>Poids Initial</th>
+                            <th>Poids Final</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in samples %}
+                        <tr>
+                            <td>{{ s.ClientSampleID }}</td>
+                            <td>{{ s.SampleType }}</td>
+                            <td>{{ s.Category }}</td>
+                            <td>{{ '%.2f g'|format(s.Weight) if s.Weight is not none else 'N/A' }}</td>
+                            <td>{{ '%.2f g'|format(s.WeightFinal) if s.WeightFinal is not none else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-header bg-secondary text-white"><h4>Résumé du Contrôle Qualité (QC)</h4></div>
+        <div class="card-body p-0">
+            {% if qc_results %}
+            <div class="table-responsive">
+                <table class="table table-sm table-striped mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID Échantillon QC</th>
+                            <th>Catégorie</th>
+                            <th>Élément</th>
+                            <th>Résultat Mesuré</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for qc in qc_results %}
+                        <tr>
+                            <td>{{ qc.ClientSampleID }}</td>
+                            <td>{{ status_badge(qc.Category) }}</td>
+                            <td>{{ qc.ElementSymbol }}</td>
+                            <td>{{ '%.3f ppm'|format(qc.ResultValue) if qc.ResultValue is not none else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="p-3 text-center text-muted">Aucun résultat de contrôle qualité n'a encore été enregistré pour ce lot.</p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

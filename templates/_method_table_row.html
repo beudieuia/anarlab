@@ -1,0 +1,22 @@
+<!-- C:\anarlab\templates\_method_table_row.html (UPDATED) -->
+<tr id="method-row-{{ method.MethodID }}">
+    <td>{{ method.GroupName or 'N/A' }}</td>
+    <td>{{ method.MethodName }}</td>
+    <td>{{ method.MethodCode }}</td>
+    <td>{% if method.RequiresPrep %}Oui{% else %}Non{% endif %}</td>
+    <!-- NEW CELL FOR RPD -->
+    <td>{{ method.MaxRpdForDuplicates if method.MaxRpdForDuplicates is not none else 'N/A' }}</td>
+    <td>
+        <button class="btn btn-warning btn-sm"
+                hx-get="{{ url_for('edit_method_form', method_id=method.MethodID) }}"
+                hx-target="#modal-body-method"
+                data-bs-toggle="modal"
+                data-bs-target="#editMethodModal">
+            Modifier
+        </button>
+        <a href="{{ url_for('manage_method_elements', method_id=method.MethodID) }}" class="btn btn-info btn-sm">Lier Éléments</a>
+        <form action="{{ url_for('delete_method', method_id=method.MethodID) }}" method="post" class="d-inline" onsubmit="return confirm('Sûr?');">
+            <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+        </form>
+    </td>
+</tr>

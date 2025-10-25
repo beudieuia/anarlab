@@ -1,0 +1,51 @@
+<!-- C:\anarlab\templates\edit_user.html -->
+{% extends 'base.html' %}
+{% block title %}Modifier l'Utilisateur{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <!-- Edit User Details Card -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h3>Modifier l'Utilisateur: <span class="text-primary">{{ user.Username }}</span></h3>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('edit_user', user_id=user.UserID) }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Nom d'utilisateur</label>
+                        <input type="text" class="form-control" id="username" name="username" value="{{ user.Username }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Rôle</label>
+                        <select class="form-select" id="role" name="role">
+                            <option value="analyst" {% if user.Role == 'analyst' %}selected{% endif %}>Analyst</option>
+                            <option value="technician" {% if user.Role == 'technician' %}selected{% endif %}>Technician</option>
+                            <option value="admin" {% if user.Role == 'admin' %}selected{% endif %}>Admin</option>
+                        </select>
+                    </div>
+                    <a href="{{ url_for('manage_users') }}" class="btn btn-secondary">Annuler</a>
+                    <button type="submit" class="btn btn-primary">Enregistrer les Modifications</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Reset Password Card -->
+        <div class="card shadow-sm border-warning">
+            <div class="card-header bg-warning">
+                <h3 class="mb-0">Réinitialiser le Mot de Passe</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Entrez un nouveau mot de passe pour cet utilisateur. L'utilisateur sera forcé de changer son mot de passe à sa prochaine connexion.</p>
+                <form method="post" action="{{ url_for('reset_user_password', user_id=user.UserID) }}">
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">Nouveau Mot de Passe</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" required>
+                    </div>
+                    <button type="submit" class="btn btn-warning" onclick="return confirm('Êtes-vous sûr de vouloir réinitialiser le mot de passe de cet utilisateur ?');">Forcer la Réinitialisation du Mot de Passe</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

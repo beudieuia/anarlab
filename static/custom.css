@@ -1,0 +1,53 @@
+/* ANARPAM-LAB Custom Stylesheet */
+
+/* Define a modern color palette */
+:root {
+    --primary-color: #007bff; /* A professional blue */
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;   /* A nice teal/cyan */
+    --navbar-bg: #343a40;
+}
+
+/* --- Branding --- */
+
+/* Style the main navigation bar */
+.navbar.bg-dark {
+    background-color: var(--navbar-bg) !important;
+    border-bottom: 3px solid var(--primary-color);
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.4rem;
+}
+
+/* --- Buttons --- */
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-info {
+    background-color: var(--info-color);
+    border-color: var(--info-color);
+}
+
+/* --- Page Elements --- */
+.card-header {
+    font-weight: bold;
+}
+
+/* Style for status badges */
+.badge.bg-warning { background-color: var(--warning-color) !important; }
+.badge.bg-info { background-color: var(--info-color) !important; }
+.badge.bg-success { background-color: var(--success-color) !important; }
+.badge.bg-danger { background-color: #a52a2a !important; } /* Custom darker red for QC Fail */
+
+/* Make table headers more prominent */
+.table .table-dark th {
+    background-color: var(--navbar-bg);
+    border-color: #454d55;
+}

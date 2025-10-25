@@ -1,0 +1,28 @@
+<!-- C:\anarlab\templates\_edit_client_form.html -->
+<!-- This is a FRAGMENT, not a full page. It's designed to be loaded into a modal. -->
+<form hx-post="{{ url_for('edit_client_post', client_id=client.ClientID) }}"
+      hx-target="#client-row-{{ client.ClientID }}"
+      hx-swap="outerHTML">
+    
+    <div class="mb-3">
+        <label for="client_name" class="form-label">Nom du Client</label>
+        <input type="text" class="form-control" id="client_name" name="client_name" value="{{ client.ClientName }}" required>
+    </div>
+    <div class="mb-3">
+        <label for="contact_person" class="form-label">Personne à Contacter</label>
+        <input type="text" class="form-control" id="contact_person" name="contact_person" value="{{ client.ContactPerson or '' }}">
+    </div>
+    <div class="mb-3">
+        <label for="contact_email" class="form-label">Email de Contact</label>
+        <input type="email" class="form-control" id="contact_email" name="contact_email" value="{{ client.ContactEmail }}" required>
+    </div>
+    <div class="mb-3">
+        <label for="client_address" class="form-label">Adresse du Client</label>
+        <textarea class="form-control" id="client_address" name="client_address" rows="3">{{ client.ClientAddress or '' }}</textarea>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </div>
+</form>

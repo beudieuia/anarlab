@@ -1,0 +1,56 @@
+<!-- C:\anarlab\templates\qc_failure_report_template.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport d'Échec QC - {{ demande.BatchCode }}</title>
+    <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: sans-serif; font-size: 11px; }
+        h1 { text-align: center; background-color: #f8d7da; color: #721c24; padding: 10px; font-size: 16px; }
+        .info-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .info-table th, .info-table td { border: 1px solid #cccccc; padding: 8px; text-align: left; }
+        .info-table th { width: 25%; background-color: #f8f8f8; }
+        .qc-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .qc-table th, .qc-table td { border: 1px solid #000; padding: 6px; text-align: center; }
+        .qc-table th { background-color: #e0e0e0; }
+        .failed { background-color: #f8d7da !important; font-weight: bold; }
+        .passed { background-color: #d4edda; }
+    </style>
+</head>
+<body>
+    {% include 'pdf_header.html' %}
+    <h1>Rapport d'Échec du Contrôle Qualité</h1>
+    <table class="info-table">
+        <tr>
+            <th>Numéro de Lot:</th><td><strong>{{ demande.BatchCode }}</strong></td>
+            <th>Date de l'Analyse:</th><td>{{ analysis_date }}</td>
+        </tr>
+    </table>
+
+    <h3 style="margin-top: 30px;">Résultats des Échantillons de Contrôle Qualité</h3>
+    <table class="qc-table">
+        <thead>
+            <tr>
+                <th>ID Échantillon QC</th>
+                <th>Catégorie</th>
+                <th>Standard</th>
+                <th>Élément</th>
+                <th>Attendu</th>
+                <th>Mesuré</th>
+                <th>Statut</th>
+            </tr>
+        </thead>
+        <tbody>
+			{% for qc in qc_results_with_limits %}
+			<tr class="{{ 'failed' if qc['status'] == 'FAIL' else 'passed' }}">
+				<td>{{ qc['ClientSampleID'] }}</td>
+				<td>{{ qc['Category'] }}</td>
+				<td>{{ qc['StandardName'] or 'N/A' }}</td>
+				<td>{{ qc['ElementSymbol'] }}</td>
+				<td>{{ qc['expected_display'] }}</td> <!-- Utilise la clé pré-formatée depuis Python -->
+				<td>{{ '%.3f'|format(qc['ResultValue']) }}</td>
+				<td>{{ qc['status'] }}</td>
+			</tr>
+			{% endfor %}
+</tbody>

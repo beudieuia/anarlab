@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Gérer les Limites pour {{ standard.StandardName }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Gérer les Limites pour : <span class="text-primary">{{ standard.StandardName }}</span></h1>
+<div class="row">
+    <div class="col-md-4">
+        <h3 class="mb-3">Ajouter une Limite pour un Élément</h3>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="element_id" class="form-label">Élément</label>
+                        <select id="element_id" name="element_id" class="form-select" required>
+                            <option value="" disabled selected>-- Sélectionnez --</option>
+                            {% for elem in elements %}<option value="{{ elem.ElementID }}">{{ elem.ElementName }} ({{ elem.ElementSymbol }})</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="expected_value" class="form-label">Valeur Attendue (Certifiée)</label>
+                        <input type="number" step="any" id="expected_value" name="expected_value" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="warning_limit" class="form-label">Limite d'Avertissement (Tolérance +/-)</label>
+                        <input type="number" step="any" id="warning_limit" name="warning_limit" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="control_limit" class="form-label">Limite de Contrôle (Tolérance +/-)</label>
+                        <input type="number" step="any" id="control_limit" name="control_limit" class="form-control" required>
+                    </div>
+                    <div class="d-grid"><button type="submit" class="btn btn-primary">Ajouter</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <h3 class="mb-3">Limites Existantes</h3>
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr><th>Élément</th><th>Valeur Attendue</th><th>Limite Avert. (+/-)</th><th>Limite Contr. (+/-)</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+                {% for limit in limits %}
+                <tr>
+                    <td>{{ limit.ElementName }} ({{ limit.ElementSymbol }})</td>
+                    <td>{{ limit.ExpectedValue }}</td>
+                    <td>{{ limit.WarningLimit }}</td>
+                    <td>{{ limit.ControlLimit }}</td>
+                    <td>
+                        <form action="{{ url_for('delete_control_limit', limit_id=limit.LimitID) }}" method="post" onsubmit="return confirm('Sûr ?');">
+                            <input type="hidden" name="standard_id" value="{{ standard.StandardID }}">
+                            <button type="submit" class="btn btn-danger btn-sm">X</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center">Aucune limite définie pour ce standard.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="mt-4">
+    <a href="{{ url_for('manage_qc_standards') }}" class="btn btn-secondary">&laquo; Retour aux Standards</a>
+</div>
+{% endblock %}

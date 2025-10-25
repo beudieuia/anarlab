@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Certificat d'Analyse - {{ batch.BatchCode }}</title>
+    <style>
+        @page { size: A4; margin: 1cm; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 10px; }
+        .info-table, .results-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .info-table th, .info-table td, .results-table th, .results-table td { border: 1px solid #cccccc; padding: 6px; text-align: left; }
+        .info-table th { width: 20%; background-color: #f2f2f2; }
+        .results-table th { background-color: #e0e0e0; text-align: center; }
+        .results-table .sample-id-col { text-align: left; background-color: #f2f2f2; }
+        h1, h2 { text-align: center; padding: 10px; font-size: 18px; margin-top: 20px; }
+        h1 { background-color: #eeeeee; }
+        h2 { border-bottom: 1px solid #ccc; }
+        .footer { position: fixed; bottom: -30px; left: 0; right: 0; text-align: center; font-size: 9px; }
+        .page-break { page-break-before: always; }
+        .no-results { text-align: center; padding: 20px; color: #888; }
+    </style>
+</head>
+<body>
+    {% include 'pdf_header.html' %}
+    <h1>Certificat d'Analyse</h1>
+    
+    <table class="info-table">
+        <tr><th>Client:</th><td>{{ batch.ClientName }}</td></tr>
+        <tr><th>Lot ID:</th><td>{{ batch.BatchCode }}</td></tr>
+        <tr><th>Date d'approbation:</th><td>{{ batch.CertificateApprovalDate.strftime('%Y-%m-%d') if batch.CertificateApprovalDate else 'N/A' }}</td></tr>
+        <tr><th>Approuvé par:</th><td>{{ batch.ApprovedBy or 'N/A' }}</td></tr>
+    </table>
+
+    {% if not pivoted_results.empty %}
+        <h2>Résultats des Échantillons Client</h2>
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th class="sample-id-col">ID Échantillon Client</th>
+                    <!-- NOUVELLE COLONNE POUR LE POIDS -->
+                    <th>Poids d'Analyse (g)</th>
+                    {% for element in elements_in_order %}<th>{{ element }}</th>{% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for index, row in pivoted_results.iterrows() %}
+                <tr>
+                    <td class="sample-id-col">{{ row.name }}</td>
+                    <!-- NOUVELLE CELLULE POUR AFFICHER LE POIDS -->
+                    <td style="text-align: center;">
+                        {{ '%.4f'|format(analysis_weights_map.get(row.name)) if analysis_weights_map.get(row.name) is not none else 'N/A' }}
+                    </td>
+                    {% for element in elements_in_order %}
+                        <td style="text-align: center;">{{ row[element] }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="no-results">Ce lot ne contenait aucun échantillon client.</p>
+    {% endif %}
+
+    <div style="margin-top: 60px;"> <!-- Espace pour la signature --> </div>
+    <div class="footer">Page 1 / 2 - Fin du Certificat - Version {{ batch.CertificateVersion }}</div>
+
+    <!-- Saut de page pour l'annexe -->
+    <div class="page-break"></div>
+    
+    {% include 'pdf_header.html' %}
+    <h2>Annexe de Contrôle Qualité</h2>
+
+    <table class="results-table">
+        <thead>
+            <tr>
+                <th>ID Échantillon QC</th>
+                <th>Catégorie</th>
+                <th>Élément</th>
+                <th>Poids d'Analyse (g)</th>
+                <th>Résultat Mesuré</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for qc in qc_results %}
+            <tr>
+                <td>{{ qc.ClientSampleID }}</td>
+                <td style="text-align: center;">{{ qc.Category }}</td>
+                <td style="text-align: center;">{{ qc.ElementSymbol }}</td>
+                <td style="text-align: center;">{{ '%.4f'|format(qc.AnalysisWeight) if qc.AnalysisWeight is not none else 'N/A' }}</td>
+                <td style="text-align: center;">{{ '%.3f'|format(qc.ResultValue) if qc.ResultValue is not none else 'N/A' }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="no-results">Aucun résultat de contrôle qualité trouvé pour ce lot.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="footer">Page 2 / 2 - Annexe de Contrôle Qualité - Version {{ batch.CertificateVersion }}</div>
+</body>
+</html>

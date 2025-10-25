@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Historique du Lot - {{ batch_code }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    {% include 'header.html' %}
+
+    <div class="container mt-4">
+        <h1 class="mb-4">Historique du Lot : <span class="text-primary">{{ batch_code }}</span></h1>
+
+        <div class="card">
+            <div class="card-body p-0">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width: 25%;">Date et Heure</th>
+                            <th style="width: 20%;">Utilisateur</th>
+                            <th>Action Effectuée</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ log.Timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td>{{ log.Username or 'N/A' }}</td>
+                            <td>{{ log.Action }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center p-4">Aucun historique trouvé pour ce lot.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="text-center mt-4">
+            <a href="javascript:history.back()" class="btn btn-secondary">Retour à la page précédente</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Tableau de Bord{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title">Tableau de Bord</h1>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-4">
+      {% for label, key, tone in [
+        ('En Réception', 'received', 'success'),
+        ('En Préparation', 'in_prep', 'primary'),
+        ('En Attente d\'Analyse', 'awaiting_analysis', 'warning'),
+        ('Échec QC', 'qc_failed', 'danger'),
+        ('Prêts pour Rapport', 'reporting', 'info'),
+        ('Approuvés', 'approved', 'success')
+      ] %}
+      <div class="col-md-4 col-lg-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-body text-center">
+            <div class="display-4 fw-bold">{{ kpi.get(key, 0) }}</div>
+            <div class="text-muted mt-2">{{ label }}</div>
+            <span class="badge bg-{{ tone }} mt-3">{{ label }}</span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Add other dashboard elements here later, like charts or recent activity -->
+
+{% endblock %}

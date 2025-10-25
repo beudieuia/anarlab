@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %}Préparation du Lot: {{ batch.BatchCode }}{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Traitement du Lot : <span class="text-primary">{{ batch.BatchCode }}</span></h1>
+        <a href="{{ url_for('prep_queue') }}" class="btn btn-secondary">Retour à la File d'Attente</a>
+    </div>
+
+    <div class="row">
+        <!-- Left Column: Final Weights & Actions -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h4>1. Enregistrer les Poids Finaux</h4>
+                </div>
+                <div class="card-body">
+                    <!-- This form submits all final weights and completes the prep process -->
+                    <form action="{{ url_for('complete_prep', batch_id=batch.BatchID) }}" method="post" id="completePrepForm">
+                        <table class="table table-sm table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID Client</th>
+                                    <th>Poids Initial (g)</th>
+                                    <th style="width: 25%;">Poids Final (g)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sample in samples %}
+                                <tr>
+                                    <td>{{ sample.ClientSampleID }}</td>
+                                    <td>{{ '%.2f'|format(sample.Weight) if sample.Weight is not none else 'N/A' }}</td>
+                                    <td>
+                                        <input type="number" step="0.01" class="form-control form-control-sm" 
+                                               name="weight_final_{{ sample.SampleID }}" 
+                                               value="{{ sample.WeightFinal or '' }}">
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </form>
+                </div>
+            </div>
+
+            <!-- New Consumables Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h4>2. Enregistrer les Consommables et Réactifs Utilisés</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Sélectionnez tous les articles de stock utilisés pour préparer ce lot. Ceci est essentiel pour la traçabilité.</p>
+                    <!-- This form ONLY submits the consumable usage -->
+                    <form action="{{ url_for('record_consumable_usage', batch_id=batch.BatchID) }}" method="post" id="consumablesForm">
+                        <div class="row" style="max-height: 200px; overflow-y: auto;">
+                            {% for item in available_consumables %}
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="stock_ids" value="{{ item.StockID }}" id="stock-{{ item.StockID }}"
+                                           {% if item.StockID in linked_consumable_ids %}checked{% endif %}>
+                                    <label class="form-check-label" for="stock-{{ item.StockID }}">
+                                        {{ item.TypeName }} - <strong>Lot: {{ item.LotNumber }}</strong>
+                                    </label>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="col-12"><p>Aucun consommable disponible en stock.</p></div>
+                            {% endfor %}
+                        </div>
+                        <hr>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-info">Enregistrer les consommables utilisés</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                 <!-- This button submits the OTHER form (completePrepForm) -->
+                <button type="submit" form="completePrepForm" class="btn btn-success btn-lg" onclick="return confirm('Êtes-vous sûr de vouloir marquer la préparation comme terminée ?');">
+                    3. Terminer la Préparation et Envoyer pour Analyse
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Column: Details & Excel Workflow -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header"><h4>Détails & Rapports</h4></div>
+                <div class="card-body">
+                    <p><strong>Client:</strong> {{ client.ClientName }}</p>
+                    <p><strong>Nombre d'échantillons:</strong> {{ samples|length }}</p>
+                    <hr>
+                    <!-- ======================= NEW PREP REPORT BUTTON ======================= -->
+                    <a href="{{ url_for('export_prep_report', batch_id=batch.BatchID) }}" class="btn btn-dark w-100" target="_blank">
+                        <i class="bi bi-file-earmark-pdf"></i> Imprimer le Rapport de Préparation
+                    </a>
+                    <!-- ==================================================================== -->
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4>Workflow Excel (Optionnel)</h4>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">Pour les grands lots, vous pouvez exporter une feuille de travail, remplir les poids finaux dans Excel, puis réimporter le fichier.</p>
+                    <p><strong>Étape A:</strong> Exporter la liste.</p>
+                    <a href="{{ url_for('export_prep_worksheet', batch_id=batch.BatchID) }}" class="btn btn-primary w-100 mb-3">Exporter Liste de Travail</a>
+                    
+                    <hr>
+
+                    <p><strong>Étape B:</strong> Importer le fichier complété.</p>
+                    <form action="{{ url_for('import_prep_weights', batch_id=batch.BatchID) }}" method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <input type="file" name="weights_file" class="form-control" required accept=".xlsx">
+                        </div>
+                        <button type="submit" class="btn btn-info w-100">Importer Poids Finaux</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

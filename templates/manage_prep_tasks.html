@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Manage Preparation Tasks{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <h2 class="mb-4">Add Prep Task</h2>
+        <div class="card"><div class="card-body">
+            <form method="post">
+                <div class="mb-3"><label for="task_name" class="form-label">Task Name</label><input type="text" class="form-control" name="task_name" required></div>
+                <button type="submit" class="btn btn-primary">Add Task</button>
+            </form>
+        </div></div>
+    </div>
+    <div class="col-md-8">
+        <h2 class="mb-4">Existing Tasks</h2>
+        <table class="table table-striped">
+            <thead class="table-dark"><tr><th>Task Name</th><th>Actions</th></tr></thead>
+            <tbody>
+            {% for task in tasks %}
+                <tr>
+                    <td>{{ task.TaskName }}</td>
+                    <td>
+                        <form action="{{ url_for('delete_prep_task', task_id=task.TaskID) }}" method="post" onsubmit="return confirm('Are you sure?');"><button type="submit" class="btn btn-danger btn-sm">Delete</button></form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

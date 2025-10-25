@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}Saisie des Résultats - {{ batch.BatchCode }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Importation des Résultats pour le Lot : <span class="text-primary">{{ batch.BatchCode }}</span></h1>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+		
+			<div class="alert alert-info small mt-3">
+				<strong>Format requis :</strong> Le fichier doit contenir une colonne <strong>'ClientSampleID'</strong>,
+				des colonnes pour chaque élément attendu (ex: Au, Ag),
+				et une colonne optionnelle <strong>'AnalysisWeight'</strong> pour le poids utilisé.
+			</div>
+		
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                Importer un Fichier Excel
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="instrument_id" class="form-label"><strong>1. Instrument Utilisé</strong></label>
+                        <select id="instrument_id" name="instrument_id" class="form-select" required>
+                            <option value="" disabled selected>-- Sélectionnez un instrument --</option>
+                            {% for inst in instruments %}
+                            <option value="{{ inst.InstrumentID }}">{{ inst.InstrumentName }} ({{ inst.InstrumentCode }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <label for="results_file" class="form-label"><strong>2. Fichier de Résultats (.xlsx)</strong></label>
+                        <input class="form-control" type="file" id="results_file" name="results_file" required>
+                    </div>
+                    <div class="alert alert-info small">
+                        <strong>Format requis :</strong> Le fichier doit contenir une colonne <strong>'ClientSampleID'</strong> et des colonnes pour chaque élément attendu.
+                    </div>
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-success btn-lg">Importer et Valider les Résultats</button>
+                        <a href="{{ url_for('analysis_queue') }}" class="btn btn-secondary btn-lg">Retour</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card mb-3">
+            <div class="card-header">Éléments Attendus</div>
+            <div class="card-body">
+                {% for el in elements %}
+                    <span class="badge bg-dark me-1 fs-6">{{ el.ElementSymbol }}</span>
+                {% else %}
+                    <p class="mb-0">Aucun élément lié aux méthodes de ce lot.</p>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">Liste Complète des Échantillons</div>
+            <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-sm table-striped mb-0">
+                    <thead class="table-dark"><tr><th>ID Échantillon</th><th>Catégorie</th></tr></thead>
+                    <tbody>
+                        {% for s in client_samples %}
+                        <tr><td>{{s.ClientSampleID}}</td><td><span class="badge bg-light text-dark">{{s.Category}}</span></td></tr>
+                        {% endfor %}
+                        {% for s in qc_samples %}
+                        <tr><td><strong>{{s.ClientSampleID}}</strong></td><td><span class="badge bg-info text-dark">{{s.Category}}</span></td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

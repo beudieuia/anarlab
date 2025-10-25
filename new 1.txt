@@ -1,0 +1,1 @@
+Server=tcp:anarpam-lims.database.windows.net,1433;Initial Catalog=MineralLabDB;Persist Security Info=False;User ID=anarpamlabo;Password=123_anarpam_123;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Ordre de Travail - {{ demande.BatchCode }}</title>
+    <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; }
+        .header-table { width: 100%; border: 0; }
+        h1 { text-align: center; background-color: #e9ecef; padding: 10px; margin-top: 20px; font-size: 18px; border: 1px solid #dee2e6; }
+        .info-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .info-table th, .info-table td { border: 1px solid #cccccc; padding: 7px; text-align: left; }
+        .info-table th { width: 25%; background-color: #f8f9fa; }
+        .section-title { margin-top: 25px; font-size: 15px; border-bottom: 2px solid #000; padding-bottom: 5px; }
+        .services-list { list-style-type: none; padding-left: 0; }
+        .services-list > li { margin-bottom: 10px; }
+        .services-list ul { list-style-type: '➢ '; padding-left: 20px; }
+        .samples-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .samples-table th, .samples-table td { border: 1px solid #000000; padding: 6px; }
+        .samples-table th { background-color: #e0e0e0; }
+    </style>
+</head>
+<body>
+    {% include 'pdf_header.html' %}
+
+    <h1>Ordre de Travail</h1>
+
+    <table class="info-table">
+        <tr>
+            <th>Client:</th>
+            <td>{{ demande.ClientName }}</td>
+            <th>Numéro de Demande:</th>
+            <td><strong>{{ demande.BatchCode }}</strong></td>
+        </tr>
+        <tr>
+            <th>Date de Réception:</th>
+            <td>{{ demande.DateReceived.strftime('%Y-%m-%d') if demande.DateReceived else 'N/A' }}</td>
+            <th>Nombre d'échantillons:</th>
+            <td>{{ samples|length }}</td>
+        </tr>
+         <tr>
+            <th>Type d'Échantillons:</th>
+            <td>{{ demande.SampleType or 'N/A' }}</td>
+            <th>Récupération Échantillons:</th>
+            <td>{{ demande.ReturnSamples or 'N/A' }}</td>
+        </tr>
+    </table>
+
+    <h2 class="section-title">Travaux à Effectuer</h2>
+    {% if grouped_methods %}
+        <ul class="services-list">
+        {% for group_name, methods in grouped_methods.items() %}
+            <li>
+                <strong>{{ group_name }}:</strong>
+                <ul>
+                    {% for method in methods %}
+                    <li>{{ method }}</li>
+                    {% endfor %}
+                </ul>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>Aucune prestation spécifiée.</p>
+    {% endif %}
+
+
+    <h2 class="section-title">Liste des Échantillons</h2>
+    <table class="samples-table" style="font-size: 10px;">
+        <thead>
+            <tr>
+                <th>ID Labo</th>
+                <th>ID Client</th>
+                <th></th>
+                <th>ID Labo</th>
+                <th>ID Client</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- This logic splits the sample list into two columns to save space -->
+            {% for i in range((samples|length + 1) // 2) %}
+            <tr>
+                <td>{{ samples[i].SampleID }}</td>
+                <td>{{ samples[i].ClientSampleID }}</td>
+                <td style="border: none; background-color: white; width: 5%;"></td>
+                {% if i + (samples|length + 1) // 2 < samples|length %}
+                    <td>{{ samples[i + (samples|length + 1) // 2].SampleID }}</td>
+                    <td>{{ samples[i + (samples|length + 1) // 2].ClientSampleID }}</td>
+                {% else %}
+                    <td></td>
+                    <td></td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>

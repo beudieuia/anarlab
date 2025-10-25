@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Gestion des Éléments - ANARPAM-LAB{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <h2 class="mb-4">Ajouter un Élément</h2>
+        <div class="card shadow-sm"><div class="card-body">
+            <form action="{{ url_for('manage_elements') }}" method="post">
+                <div class="mb-3"><label for="element_symbol" class="form-label">Symbole</label><input type="text" class="form-control" id="element_symbol" name="element_symbol" required></div>
+                <div class="mb-3"><label for="element_name" class="form-label">Nom Complet</label><input type="text" class="form-control" id="element_name" name="element_name" required></div>
+                <div class="d-grid"><button type="submit" class="btn btn-primary">Enregistrer</button></div>
+            </form>
+        </div></div>
+    </div>
+    <div class="col-md-8">
+        <h2 class="mb-4">Éléments Existants</h2>
+        {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for c, m in messages %}<div class="alert alert-{{c}}">{{m}}</div>{% endfor %}{% endif %}{% endwith %}
+        <table class="table table-striped table-hover">
+            <thead class="table-dark"><tr><th>Symbole</th><th>Nom Complet</th><th style="width: 25%;">Actions</th></tr></thead>
+            <tbody id="element-table-body">
+                {% for element in elements %}
+                    {% include '_element_table_row.html' %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="editElementModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Modifier l'Élément</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body" id="modal-body-element"></div>
+    </div></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.body.addEventListener('closeElementModal', function() {
+        var modal = bootstrap.Modal.getInstance(document.getElementById('editElementModal'));
+        modal.hide();
+    });
+</script>
+{% endblock %}

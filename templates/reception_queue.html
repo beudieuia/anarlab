@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% from "_macros.html" import status_badge %}
+
+{% block title %}File de Réception{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title mb-1">File de Réception</h1>
+            <p class="text-muted">Lots en attente d'envoi au laboratoire.</p>
+        </div>
+        <a href="{{ url_for('detailed_reception') }}" class="btn btn-primary btn-lg"><i class="bi bi-plus-circle-fill me-2"></i> Nouvelle Demande</a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date Réception</th>
+                            <th>Code du Lot</th>
+                            <th>Client</th>
+                            <th>Statut</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for batch in batches %}
+                        <tr>
+                            <td>{{ batch.DateReceived.strftime('%Y-%m-%d') if batch.DateReceived else 'N/A' }}</td>
+                            <td><strong>{{ batch.BatchCode }}</strong></td>
+                            <td>{{ batch.ClientName }}</td>
+                            <td>{{ status_badge(batch.Status) }}</td>
+                            <td class="text-end">
+                                <div class="btn-group">
+                                    <a href="{{ url_for('batch_details', batch_id=batch.BatchID) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye-fill"></i> Voir</a>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span class="visually-hidden">Toggle Dropdown</span>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <button class="dropdown-item" type="button" onclick="dispatchViaAPI({{ batch.BatchID }}, {{ current_user.id }})">
+												<i class="bi bi-send-fill me-2"></i> Envoyer au Labo
+											</button>
+                                        </li>
+                                        {% if current_user.role == 'admin' %}
+                                        <li><a class="dropdown-item" href="{{ url_for('edit_demande', batch_id=batch.BatchID) }}"><i class="bi bi-pencil-square me-2"></i> Modifier</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <form action="{{ url_for('delete_batch', batch_id=batch.BatchID) }}" method="post" onsubmit="return confirm('ATTENTION: Cette action est irréversible. Êtes-vous sûr ?');">
+                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash-fill me-2"></i> Supprimer</button>
+                                            </form>
+                                        </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center p-4">Aucun nouveau lot en attente.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+
+{% block scripts %}
+{{ super() }}
+<script>
+async function dispatchViaAPI(batchId, userId) {
+    if (!confirm(`Êtes-vous sûr de vouloir envoyer le lot #${batchId} au laboratoire ?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/flow/dispatch/${batchId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.status === 'success') {
+            alert(result.message);
+            window.location.reload();
+        } else {
+            alert('Erreur: ' + (result.message || 'Le serveur a rencontré un problème.'));
+        }
+    } catch (error) {
+        console.error('Erreur réseau:', error);
+        alert('Une erreur de connexion est survenue.');
+    }
+}
+</script>
+{% endblock %}

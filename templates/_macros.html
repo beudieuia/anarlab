@@ -1,0 +1,14 @@
+{% macro status_badge(status_text) -%}
+  {% set color_map = {
+    'Received': 'success',
+    'Dispatched': 'primary',
+    'In Prep': 'primary',
+    'Awaiting Analysis': 'warning',
+    'QC Failed': 'danger',
+    'Analysis Complete': 'info',
+    'Approved': 'success',
+    'Rejected': 'danger',
+    'Archived': 'dark'
+  } %}
+  <span class="badge bg-{{ color_map.get(status_text, 'secondary') }}">{{ status_text or 'N/A' }}</span>
+{%- endmacro %}

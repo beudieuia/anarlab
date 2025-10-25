@@ -1,0 +1,49 @@
+<!-- C:\anarlab\templates\edit_method.html (UPDATED) -->
+<!-- This is a FRAGMENT, designed to be loaded inside a modal window. -->
+<form hx-post="{{ url_for('edit_method_post', method_id=method.MethodID) }}"
+      hx-target="#method-row-{{ method.MethodID }}"
+      hx-swap="outerHTML">
+      
+    <div class="mb-3">
+        <label for="method_name" class="form-label">Nom de la Méthode</label>
+        <input type="text" class="form-control" id="method_name" name="method_name" value="{{ method.MethodName }}" required>
+    </div>
+    
+    <div class="mb-3">
+        <label for="method_code" class="form-label">Code de la Méthode</label>
+        <input type="text" class="form-control" id="method_code" name="method_code" value="{{ method.MethodCode }}" required>
+    </div>
+    
+    <div class="mb-3">
+        <label for="group_id" class="form-label">Groupe de Prestation</label>
+        <select class="form-select" id="group_id" name="group_id" required>
+            {% for group in service_groups %}
+            <option value="{{ group.GroupID }}" {% if group.GroupID == method.GroupID %}selected{% endif %}>
+                {{ group.GroupName }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- =============================================================== -->
+    <!-- NEW FIELD FOR RPD -->
+    <!-- =============================================================== -->
+    <div class="mb-3">
+        <label for="max_rpd" class="form-label">RPD Max pour Doublons (%)</label>
+        <input type="number" step="0.01" class="form-control" id="max_rpd" name="max_rpd" 
+               value="{{ method.MaxRpdForDuplicates if method.MaxRpdForDuplicates is not none else '' }}" 
+               placeholder="Ex: 10 (laisser vide si non applicable)">
+    </div>
+    <!-- =============================================================== -->
+    
+    <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="requires_prep" name="requires_prep" {% if method.RequiresPrep %}checked{% endif %}>
+        <label class="form-check-label" for="requires_prep">Nécessite une Préparation</label>
+    </div>
+
+    <!-- Modal Footer for action buttons -->
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </div>
+</form>

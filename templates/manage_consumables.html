@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% block title %}Gestion des Consommables & Réactifs{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Gestion de l'Inventaire (Consommables & Réactifs)</h1>
+
+<!-- Search & Filter Card -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <h4><i class="bi bi-funnel-fill"></i> Filtres de Recherche</h4>
+    </div>
+    <div class="card-body">
+        <form method="get" action="{{ url_for('manage_consumables') }}">
+            <div class="row g-3 align-items-end">
+                <div class="col-lg-6">
+                    <label for="search" class="form-label">Rechercher par Type ou N° de Lot</label>
+                    <input type="text" class="form-control" name="search" id="search" value="{{ search_filters.search or '' }}">
+                </div>
+                <div class="col-lg-4">
+                    <label for="supplier_id" class="form-label">Filtrer par Fournisseur</label>
+                    <select class="form-select" name="supplier_id" id="supplier_id">
+                        <option value="">Tous les Fournisseurs</option>
+                        {% for supplier in suppliers %}
+                            <option value="{{ supplier.SupplierID }}" {% if search_filters.supplier_id and supplier.SupplierID == search_filters.supplier_id|int %}selected{% endif %}>
+                                {{ supplier.SupplierName }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-2">
+                    <button type="submit" class="btn btn-primary w-100">Rechercher</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Column for current stock -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h4>Stock Actuel ({{ stock|length }} articles trouvés)</h4>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Type</th>
+                                <th>Lot</th>
+                                <th>Fournisseur</th>
+                                <th>Expire le</th>
+                                <th>Quantité</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in stock %}
+                            <tr>
+                                <td>{{ item.TypeName }}</td>
+                                <td><strong>{{ item.LotNumber }}</strong></td>
+                                <td>{{ item.SupplierName or 'N/A' }}</td>
+                                <td class="{{ 'text-danger fw-bold' if item.ExpiryDate and item.ExpiryDate < now else '' }}">
+                                    {{ item.ExpiryDate.strftime('%Y-%m-%d') if item.ExpiryDate else 'N/A' }}
+                                </td>
+                                <td>{{ "%.2f"|format(item.Quantity) }} {{ item.Unit }}</td>
+                                <td>
+                                    <form action="{{ url_for('deplete_stock_item', stock_id=item.StockID) }}" method="post" onsubmit="return confirm('Voulez-vous marquer cet article comme épuisé (quantité = 0) ?');">
+                                        <button type="submit" class="btn btn-warning btn-sm">Épuisé</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="6" class="text-center p-4">Aucun article en stock correspondant à vos critères de recherche.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Column for adding new items and managing types/suppliers -->
+    <div class="col-lg-4">
+        <!-- ======================= THIS IS THE CORRECTED CARD ======================= -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header"><h4>Ajouter un Nouvel Article en Stock</h4></div>
+            <div class="card-body">
+                <form action="{{ url_for('add_stock') }}" method="post">
+                    <div class="mb-3">
+                        <label for="consumable_type_id" class="form-label">Type de Consommable</label>
+                        <select class="form-select" name="consumable_type_id" required>
+                            <option value="" disabled selected>-- Sélectionnez un type --</option>
+                            {% for type in types %}<option value="{{ type.ConsumableTypeID }}">{{ type.TypeName }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="lot_number" class="form-label">Numéro de Lot/Batch</label>
+                        <input type="text" class="form-control" name="lot_number" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="quantity" class="form-label">Quantité</label>
+                            <input type="number" step="any" class="form-control" name="quantity" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="unit" class="form-label">Unité</label>
+                            <input type="text" class="form-control" name="unit" placeholder="Ex: mL, g" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="supplier_id_add" class="form-label">Fournisseur (Optionnel)</label>
+                        <select class="form-select" name="supplier_id" id="supplier_id_add">
+                            <option value="">-- Aucun --</option>
+                            {% for supplier in suppliers %}<option value="{{ supplier.SupplierID }}">{{ supplier.SupplierName }}</option>{% endfor %}
+                        </select>
+                    </div>
+                     <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="date_received" class="form-label">Date de Réception</label>
+                            <input type="date" class="form-control" name="date_received" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="expiry_date" class="form-label">Date d'Expiration</label>
+                            <input type="date" class="form-control" name="expiry_date">
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Ajouter au Stock</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- ====================================================================== -->
+
+        {% if current_user.role == 'admin' %}
+        <!-- Admin Management Accordion -->
+        <div class="accordion" id="adminManagementAccordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingOne">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                        Gérer les Types de Consommables ({{ types|length }})
+                    </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#adminManagementAccordion">
+                    <div class="accordion-body">
+                        <form action="{{ url_for('add_consumable_type') }}" method="post" class="mb-3">
+                            <input type="text" name="type_name" class="form-control mb-2" placeholder="Nom du type" required>
+                            <button type="submit" class="btn btn-secondary btn-sm">Ajouter Type</button>
+                        </form>
+                        <ul class="list-group">
+                            {% for type in types %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ type.TypeName }}
+                                <form action="{{ url_for('delete_consumable_type', type_id=type.ConsumableTypeID) }}" method="post" onsubmit="return confirm('Sûr?');">
+                                    <button type="submit" class="btn btn-danger btn-sm">X</button>
+                                </form>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingTwo">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                        Gérer les Fournisseurs ({{ suppliers|length }})
+                    </button>
+                </h2>
+                <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#adminManagementAccordion">
+                    <div class="accordion-body">
+                        <form action="{{ url_for('add_supplier') }}" method="post" class="mb-3">
+                            <input type="text" name="supplier_name" class="form-control mb-2" placeholder="Nom du fournisseur" required>
+                            <button type="submit" class="btn btn-secondary btn-sm">Ajouter Fournisseur</button>
+                        </form>
+                        <ul class="list-group">
+                            {% for supplier in suppliers %}
+                             <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ supplier.SupplierName }}
+                                <form action="{{ url_for('delete_supplier', supplier_id=supplier.SupplierID) }}" method="post" onsubmit="return confirm('Sûr?');">
+                                    <button type="submit" class="btn btn-danger btn-sm">X</button>
+                                </form>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

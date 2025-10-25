@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Manage Prep Equipment{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <h2 class="mb-4">Add Equipment</h2>
+        <div class="card"><div class="card-body">
+            <form method="post">
+                <div class="mb-3"><label for="equipment_name" class="form-label">Equipment Name</label><input type="text" class="form-control" name="equipment_name" required></div>
+                <button type="submit" class="btn btn-primary">Add Equipment</button>
+            </form>
+        </div></div>
+    </div>
+    <div class="col-md-8">
+        <h2 class="mb-4">Existing Equipment</h2>
+        <table class="table table-striped">
+            <thead class="table-dark"><tr><th>Equipment Name</th><th>Actions</th></tr></thead>
+            <tbody>
+            {% for item in equipment %}
+                <tr>
+                    <td>{{ item.EquipmentName }}</td>
+                    <td>
+                        <form action="{{ url_for('delete_prep_equipment', equipment_id=item.EquipmentID) }}" method="post" onsubmit="return confirm('Are you sure?');"><button type="submit" class="btn btn-danger btn-sm">Delete</button></form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

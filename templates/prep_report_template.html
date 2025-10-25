@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport de Préparation - {{ batch.BatchCode }}</title>
+    <style>
+        @page { size: A4; margin: 1.5cm; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; }
+        h1 { text-align: center; background-color: #e9ecef; padding: 10px; font-size: 16px; border: 1px solid #dee2e6; }
+        .info-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .info-table th, .info-table td { border: 1px solid #cccccc; padding: 7px; text-align: left; }
+        .info-table th { width: 25%; background-color: #f8f9fa; }
+        .section-title { margin-top: 25px; font-size: 14px; border-bottom: 1px solid #000; padding-bottom: 5px; }
+        .samples-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .samples-table th, .samples-table td { border: 1px solid #000000; padding: 6px; text-align: center;}
+        .samples-table th { background-color: #e0e0e0; }
+    </style>
+</head>
+<body>
+    {% include 'pdf_header.html' %}
+
+    <h1>Rapport de Préparation Mécanique</h1>
+
+    <table class="info-table">
+        <tr>
+            <th>Client:</th><td>{{ batch.ClientName }}</td>
+            <th>Code du Lot:</th><td><strong>{{ batch.BatchCode }}</strong></td>
+        </tr>
+        <tr>
+            <th>Date de Préparation:</th><td>{{ prep_info.date }}</td>
+            <th>Préparé par:</th><td>{{ prep_info.user }}</td>
+        </tr>
+    </table>
+
+    <h3 class="section-title">Procédure de Préparation</h3>
+    <p>
+        <strong>Tâches Effectuées:</strong> 
+        {{ prep_info.tasks|join(', ') if prep_info.tasks else 'N/A' }}
+    </p>
+    <p>
+        <strong>Équipement Utilisé:</strong>
+        {{ prep_info.equipment|join(', ') if prep_info.equipment else 'N/A' }}
+    </p>
+
+    <h3 class="section-title">Rapport des Poids</h3>
+    <table class="samples-table">
+        <thead>
+            <tr>
+                <th>ID Échantillon Client</th>
+                <th>Poids Initial (g)</th>
+                <th>Poids Final (g)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sample in samples %}
+            <tr>
+                <td>{{ sample.ClientSampleID }}</td>
+                <td>{{ '%.2f'|format(sample.Weight) if sample.Weight is not none else 'N/A' }}</td>
+                <td>{{ '%.2f'|format(sample.WeightFinal) if sample.WeightFinal is not none else 'N/A' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3">Aucun échantillon trouvé.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>

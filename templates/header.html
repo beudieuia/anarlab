@@ -1,0 +1,85 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <div class="container-fluid">
+        <!-- Main Brand Logo and Link -->
+        <a class="navbar-brand d-flex align-items-center" href="{{ url_for('dashboard') }}">
+            <img src="{{ url_for('static', filename='lab-logo.png') }}" alt="Logo" width="40" height="40" class="d-inline-block align-text-top me-2">
+            <strong>ANARPAM-LAB</strong>
+        </a>
+
+        <!-- Mobile Toggle Button -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Main Navigation Links -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('reception_queue') }}"><i class="bi bi-box-arrow-in-down me-1"></i> Réception</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('prep_queue') }}"><i class="bi bi-hammer me-1"></i> Préparation</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('analysis_queue') }}"><i class="bi bi-beaker me-1"></i> Analyse</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('reporting_queue') }}"><i class="bi bi-file-earmark-check me-1"></i> Rapports</a>
+                </li>
+
+                <!-- ======================= NEW & IMPROVED ADMIN DROPDOWN ======================= -->
+                {% if current_user.is_authenticated and current_user.role == 'admin' %}
+                 <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-gear-fill me-1"></i> Gestion & Rapports
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                        <!-- Section 1: Reporting & Analytics -->
+                        <li><h6 class="dropdown-header">Rapports & Analyses</h6></li>
+                        <li><a class="dropdown-item" href="{{ url_for('advanced_reporting') }}"><i class="bi bi-file-earmark-spreadsheet-fill me-2"></i> Rapports Avancés</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('control_charts') }}"><i class="bi bi-graph-up-arrow me-2"></i> Cartes de Contrôle QC</a></li>
+                        <li><hr class="dropdown-divider"></li>
+
+                        <!-- Section 2: Quality Control Management -->
+                        <li><h6 class="dropdown-header">Gestion QC</h6></li>
+                        <li><a class="dropdown-item" href="{{ url_for('manage_qc_standards') }}"><i class="bi bi-shield-check me-2"></i> Standards QC</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('manage_blank_limits') }}"><i class="bi bi-shield-slash me-2"></i> Limites des Blancs</a></li>
+                        <li><hr class="dropdown-divider"></li>
+
+                        <!-- Section 3: System Management -->
+                        <li><h6 class="dropdown-header">Gestion Système</h6></li>
+                        <li><a class="dropdown-item" href="{{ url_for('manage_users') }}"><i class="bi bi-people-fill me-2"></i> Utilisateurs</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('manage_clients') }}"><i class="bi bi-briefcase-fill me-2"></i> Clients</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('manage_methods') }}"><i class="bi bi-journal-richtext me-2"></i> Méthodes</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('manage_elements') }}"><i class="bi bi-diagram-3-fill me-2"></i> Éléments</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('manage_sample_types') }}"><i class="bi bi-box-seam me-2"></i> Types d'Échantillon</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('manage_instruments') }}"><i class="bi bi-sliders me-2"></i> Instruments</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('manage_consumables') }}"><i class="bi bi-droplet-fill me-2"></i> Inventaire</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        
+                        <!-- Section 4: Application Settings -->
+                        <li><a class="dropdown-item" href="{{ url_for('settings') }}"><i class="bi bi-toggles2 me-2"></i> Paramètres</a></li>
+                    </ul>
+                </li>
+                {% endif %}
+                <!-- ============================================================================== -->
+            </ul>
+            
+            <!-- User Status Dropdown (on the far right) -->
+            <ul class="navbar-nav">
+                {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle me-1"></i> {{ current_user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="bi bi-shield-lock-fill me-2"></i> Changer Mot de Passe</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right me-2"></i> Se Déconnecter</a></li>
+                        </ul>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Échec du Contrôle Qualité - {{ batch.BatchCode }}{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title mb-1 text-danger">Échec du Contrôle Qualité</h1>
+            <p class="text-muted">Le lot <strong>{{ batch.BatchCode }}</strong> a échoué aux vérifications automatiques.</p>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-danger">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0"><i class="bi bi-exclamation-triangle-fill me-2"></i> Résumé des Échecs</h4>
+        </div>
+        <div class="card-body">
+            <p>Les résultats ont été enregistrés, mais un ou plusieurs échantillons de contrôle qualité sont hors des limites acceptables. Le lot a été marqué comme <strong>'QC Failed'</strong> et reste dans la file d'attente d'analyse pour examen.</p>
+            
+            <ul class="list-group">
+                {% for warning in warnings %}
+                    <li class="list-group-item list-group-item-warning">{{ warning }}</li>
+                {% else %}
+                    <li class="list-group-item">Aucun détail d'échec spécifique n'a été fourni.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="card-footer text-center bg-light">
+            <h5 class="mb-3">Actions Recommandées</h5>
+            <div class="btn-group">
+                <!-- "Relancer" (Rerun) Button -->
+                <form action="{{ url_for('reset_batch_results', batch_id=batch.BatchID) }}" method="post" class="d-inline" onsubmit="return confirm('ATTENTION : Ceci supprimera tous les résultats analytiques de ce lot pour permettre une nouvelle importation. Êtes-vous sûr ?');">
+                    <button type="submit" class="btn btn-warning btn-lg"><i class="bi bi-arrow-counterclockwise me-2"></i> Relancer (Réimporter les Résultats)</button>
+                </form>
+                
+                <!-- Print Report Button -->
+                <a href="{{ url_for('qc_failure_report', batch_id=batch.BatchID) }}" target="_blank" class="btn btn-danger btn-lg"><i class="bi bi-file-earmark-pdf me-2"></i> Imprimer le Rapport d'Échec</a>
+                
+                <!-- Back Button -->
+                <a href="{{ url_for('analysis_queue') }}" class="btn btn-secondary btn-lg"><i class="bi bi-arrow-left-circle me-2"></i> Retour à la File d'Attente</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

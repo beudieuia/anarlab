@@ -1,0 +1,92 @@
+<!-- C:\anarlab\templates\manage_blank_limits.html -->
+{% extends 'base.html' %}
+
+{% block title %}Limites de Contrôle des Blancs{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Gestion des Limites de Contrôle pour les Blancs</h1>
+<p class="text-muted">Définissez ici la valeur maximale acceptable pour chaque élément lorsqu'il est mesuré dans un échantillon de type "Blanc".</p>
+
+
+<div class="row">
+    <!-- Add Limit Column -->
+    <div class="col-md-4">
+        <h3 class="mb-3">Ajouter une Limite</h3>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="element_id" class="form-label">Élément</label>
+                        <select id="element_id" name="element_id" class="form-select" required>
+                            <option value="" disabled selected>-- Sélectionnez un élément --</option>
+                            {% for elem in elements %}
+                                <option value="{{ elem.ElementID }}">{{ elem.ElementName }} ({{ elem.ElementSymbol }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                     <div class="mb-3">
+                        <label for="control_limit" class="form-label">Limite de Contrôle Maximale</label>
+                        <input type="number" step="any" id="control_limit" name="control_limit" class="form-control" required placeholder="Ex: 0.005">
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Ajouter la Limite</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Existing Limits Column -->
+    <div class="col-md-8">
+        <h3 class="mb-3">Limites Existantes</h3>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}<div class="alert alert-{{category}}">{{message}}</div>{% endfor %}{% endif %}
+        {% endwith %}
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Élément</th>
+                    <th>Limite de Contrôle (Doit être <)</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for limit in limits %}
+                <tr>
+                    <td>{{ limit.ElementName }} ({{ limit.ElementSymbol }})</td>
+                    <td>{{ limit.ControlLimit }}</td>
+                    <td>
+                        <form action="{{ url_for('delete_blank_limit', limit_id=limit.LimitID) }}" method="post" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette limite ?');">
+                            <button type="submit" class="btn btn-danger btn-sm">X</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="text-center">Aucune limite de contrôle définie pour les blancs.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}```
+
+#### **Step 4: Add the Navigation Link**
+
+Finally, let's make the new page accessible from the admin menu.
+
+**Action:** Open `C:\anarlab\templates\header.html` and add the new link to the "Gestion & Rapports" dropdown.
+
+```html
+<!-- Inside header.html -->
+<ul class="dropdown-menu" aria-labelledby="adminDropdown">
+    <!-- ... other links ... -->
+    <li><h6 class="dropdown-header">Configuration</h6></li>
+    <li><a class="dropdown-item" href="{{ url_for('settings') }}">Paramètres de l'Application</a></li>
+    <li><a class="dropdown-item" href="{{ url_for('manage_qc_standards') }}">Gestion des Standards QC</a></li>
+    <!-- THIS IS THE NEW LINK -->
+    <li><a class="dropdown-item" href="{{ url_for('manage_blank_limits') }}">Gestion des Limites des Blancs</a></li>
+    <li><a class="dropdown-item" href="{{ url_for('manage_instruments') }}">Gestion des Instruments</a></li>
+    <!-- ... rest of your links -->
+</ul>

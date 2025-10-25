@@ -1,0 +1,106 @@
+<!-- C:\anarlab\templates\reporting_queue.html (VERSION CORRIGÉE ET MODERNE) -->
+{% extends 'base.html' %}
+{% from "_macros.html" import status_badge %}
+
+{% block title %}File d'Attente - Rapports{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title mb-1">Lots Prêts pour Rapport</h1>
+            <p class="text-muted">Lots en attente de validation, de certification ou d'archivage.</p>
+        </div>
+    </div>
+    
+    <!-- Search and Filter Form -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" action="{{ url_for('reporting_queue') }}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label for="search" class="form-label">Rechercher par Code de Lot ou Client</label>
+                        <input type="text" class="form-control" id="search" name="search" value="{{ search_term or '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="start_date" class="form-label">Date de Début</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date or '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="end_date" class="form-label">Date de Fin</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date or '' }}">
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-primary w-100">OK</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Code du Lot</th>
+                            <th>Client</th>
+                            <th>Statut du Certificat</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for batch in batches %}
+                        <tr>
+                            <td><a href="{{ url_for('batch_details', batch_id=batch.BatchID) }}"><strong>{{ batch.BatchCode }}</strong></a></td>
+                            <td>{{ batch.ClientName }}</td>
+                            <td>
+                                {{ status_badge(batch.CertificateStatus or 'En Attente de Validation') }}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group">
+                                    {% if batch.CertificateStatus == 'Approved' %}
+                                        <a href="{{ url_for('generate_certificate', batch_id=batch.BatchID) }}" target="_blank" class="btn btn-primary btn-sm"><i class="bi bi-file-earmark-pdf me-1"></i> Certificat</a>
+                                        <a href="{{ url_for('export_results_excel', batch_id=batch.BatchID) }}" class="btn btn-info btn-sm"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Excel</a>
+                                        {% if current_user.role == 'admin' %}
+                                            <form action="{{ url_for('archive_batch', batch_id=batch.BatchID) }}" method="POST" class="d-inline" onsubmit="return confirm('Voulez-vous vraiment archiver ce lot ?');">
+                                                <button type="submit" class="btn btn-secondary btn-sm"><i class="bi bi-archive-fill me-1"></i> Archiver</button>
+                                            </form>
+                                        {% endif %}
+                                    {% else %}
+                                        {% if current_user.role == 'admin' %}
+                                            <a href="{{ url_for('review_batch', batch_id=batch.BatchID) }}" class="btn btn-success btn-sm"><i class="bi bi-check2-square me-1"></i> Valider les Résultats</a>
+                                        {% else %}
+                                            <span class="text-muted fst-italic">En attente de validation.</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center p-4">Aucun lot trouvé correspondant à vos critères.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('reporting_queue', page=current_page-1, search=search_term, start_date=start_date, end_date=end_date) }}">Précédent</a>
+            </li>
+            {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if p == current_page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('reporting_queue', page=p, search=search_term, start_date=start_date, end_date=end_date) }}">{{ p }}</a>
+                </li>
+            {% endfor %}
+            <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('reporting_queue', page=current_page+1, search=search_term, start_date=start_date, end_date=end_date) }}">Suivant</a>
+            </li>
+        </ul>
+    </nav>
+{% endblock %}

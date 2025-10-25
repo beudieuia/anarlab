@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestion des Clients - ANARPAM-LAB{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Add Client Column -->
+    <div class="col-md-4">
+        <h2 class="mb-4">Ajouter un Client</h2>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form action="{{ url_for('manage_clients') }}" method="post">
+                    <div class="mb-3">
+                        <label for="client_name" class="form-label">Nom du Client</label>
+                        <input type="text" class="form-control" id="client_name" name="client_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="contact_person" class="form-label">Personne à Contacter</label>
+                        <input type="text" class="form-control" id="contact_person" name="contact_person">
+                    </div>
+                    <div class="mb-3">
+                        <label for="contact_email" class="form-label">Email de Contact</label>
+                        <input type="email" class="form-control" id="contact_email" name="contact_email" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Enregistrer le Client</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Existing Clients Column -->
+    <div class="col-md-8">
+        <h2 class="mb-4">Clients Existants</h2>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for c, m in messages %}<div class="alert alert-{{c}} alert-dismissible fade show" role="alert">{{m}}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{% endfor %}{% endif %}
+        {% endwith %}
+
+        <table class="table table-striped table-hover" id="clientsTable">
+            <thead class="table-dark">
+                <tr>
+                    <th>Nom du Client</th>
+                    <th>Contact</th>
+                    <th>Email</th>
+                    <th style="width: 25%;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="client-table-body">
+                {% for client in clients %}
+                    {% include '_client_table_row.html' %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- BOOTSTRAP MODAL STRUCTURE -->
+<div class="modal fade" id="editClientModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modifier le Client</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <div class="d-flex justify-content-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    $(document).ready(function() {
+        $('#clientsTable').DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json"
+            }
+        });
+    });
+</script>
+{% endblock %}

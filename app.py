@@ -5,6 +5,7 @@ import pyodbc
 import pandas as pd
 import pdfkit
 import traceback
+import os
 from datetime import datetime, timedelta
 from decimal import Decimal
 from flask import Flask, render_template, request, redirect, url_for, flash, make_response, jsonify
@@ -33,6 +34,27 @@ if DB_USERNAME and DB_PASSWORD:
     connection_string = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={DB_SERVER};DATABASE={DB_NAME};UID={DB_USERNAME};PWD={DB_PASSWORD}'
 else:
     connection_string = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={DB_SERVER};DATABASE={DB_NAME};Trusted_Connection=yes;'
+
+# --- NOUVELLE MÉTHODE DE CONNEXION POUR AZURE ---
+# Récupère la chaîne de connexion depuis les paramètres de l'application Azure
+connection_string = os.environ.get('DATABASE_CONNECTION_STRING')
+
+engine = None
+if connection_string:
+    try:
+        # On doit spécifier le driver ODBC pour Azure App Service
+        quoted_conn_str = urllib.parse.quote_plus(connection_string)
+        
+        engine = create_engine(
+            f'mssql+pyodbc:///?odbc_connect={quoted_conn_str}&driver=ODBC+Driver+17+for+SQL+Server',
+            pool_size=10, max_overflow=5, pool_timeout=30, pool_recycle=1800
+        )
+        print("Successfully created SQLAlchemy engine for Azure SQL from environment variable.")
+    except Exception as e:
+        print(f"Failed to create SQLAlchemy engine from environment variable: {e}")
+        engine = None
+else:
+    print("DATABASE_CONNECTION_STRING environment variable not found.")
 
 # --- UPDATED: ENGINE WITH CONNECTION POOLING ---
 try:

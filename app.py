@@ -37,7 +37,7 @@ else:
 
 # --- NOUVELLE MÉTHODE DE CONNEXION POUR AZURE ---
 # Récupère la chaîne de connexion depuis les paramètres de l'application Azure
-connection_string = os.environ.get('DATABASE_CONNECTION_STRING')
+connection_string = os.environ.get('AZURE_SQL_CONNECTIONSTRING')
 
 engine = None
 if connection_string:

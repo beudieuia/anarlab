@@ -1,9 +1,7 @@
 import io
 import math
 import json
-import pyodbc
 import pandas as pd
-import pdfkit
 import traceback
 import os
 from datetime import datetime, timedelta
@@ -12,62 +10,63 @@ from flask import Flask, render_template, request, redirect, url_for, flash, mak
 from functools import wraps
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
-from waitress import serve
 from sqlalchemy import create_engine, text, bindparam
 import urllib.parse
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required
-import urllib.parse
-from sqlalchemy import create_engine
 from weasyprint import HTML
 
-connection_string = "Server=tcp:anarpam-lims.database.windows.net,1433;Initial Catalog=MineralLabDB;Persist Security Info=False;User ID=anarpamlabo;Password=Anarpam_123;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
-
-# --- App Configuration & DB Connection ---
+# --- App Configuration ---
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'a-very-secret-key-that-you-should-change'
-DB_SERVER = 'AHMED\\SQLEXPRESS'
-DB_NAME = 'MineralLabDB'
-DB_USERNAME = ""
-DB_PASSWORD = ""
-if DB_USERNAME and DB_PASSWORD:
-    connection_string = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={DB_SERVER};DATABASE={DB_NAME};UID={DB_USERNAME};PWD={DB_PASSWORD}'
-else:
-    connection_string = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={DB_SERVER};DATABASE={DB_NAME};Trusted_Connection=yes;'
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'a-default-secret-key-for-dev')
 
-# --- NOUVELLE MÉTHODE DE CONNEXION POUR AZURE ---
-# Récupère la chaîne de connexion depuis les paramètres de l'application Azure
-connection_string = os.environ.get('AZURE_SQL_CONNECTIONSTRING')
-
+# --- BLOC DE CONNEXION À LA BASE DE DONNÉES UNIQUE ET CORRIGÉ ---
 engine = None
-if connection_string:
-    try:
+try:
+    # Récupère la chaîne de connexion depuis les paramètres de l'application Azure
+    # C'EST LE BON NOM DE VARIABLE CRÉÉ PAR LE SERVICE CONNECTOR
+    connection_string = os.environ.get('AZURE_SQL_CONNECTIONSTRING')
+
+    if connection_string:
         # On doit spécifier le driver ODBC pour Azure App Service
         quoted_conn_str = urllib.parse.quote_plus(connection_string)
         
         engine = create_engine(
             f'mssql+pyodbc:///?odbc_connect={quoted_conn_str}&driver=ODBC+Driver+17+for+SQL+Server',
-            pool_size=10, max_overflow=5, pool_timeout=30, pool_recycle=1800
+            pool_size=10, 
+            max_overflow=5, 
+            pool_timeout=30, 
+            pool_recycle=1800
         )
         print("Successfully created SQLAlchemy engine for Azure SQL from environment variable.")
-    except Exception as e:
-        print(f"Failed to create SQLAlchemy engine from environment variable: {e}")
-        engine = None
-else:
-    print("DATABASE_CONNECTION_STRING environment variable not found.")
+    else:
+        # Configuration de secours pour le développement local si la variable n'est pas trouvée
+        print("AZURE_SQL_CONNECTIONSTRING not found. Falling back to local DB configuration.")
+        local_db_server = 'AHMED\\SQLEXPRESS'
+        local_db_name = 'MineralLabDB'
+        local_connection_string = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={local_db_server};DATABASE={local_db_name};Trusted_Connection=yes;'
+        quoted_conn_str = urllib.parse.quote_plus(local_connection_string)
+        engine = create_engine(
+            f'mssql+pyodbc:///?odbc_connect={quoted_conn_str}',
+            pool_size=5, max_overflow=2
+        )
+        print("Successfully created SQLAlchemy engine for LOCAL SQL Server Express.")
 
-# --- UPDATED: ENGINE WITH CONNECTION POOLING ---
-try:
-    quoted_conn_str = urllib.parse.quote_plus(connection_string).replace('+', '%2B')
-    engine = create_engine(
-        f'mssql+pyodbc:///?odbc_connect={quoted_conn_str}&driver=ODBC+Driver+17+for+SQL+Server',
-        pool_size=10, max_overflow=5, pool_timeout=30, pool_recycle=1800
-    )
-    print("Successfully created SQLAlchemy engine for Azure SQL.")
 except Exception as e:
-    print(f"Failed to create SQLAlchemy engine: {e}")
+    print(f"CRITICAL: Failed to create SQLAlchemy engine: {e}")
+    traceback.print_exc()
     engine = None
 
+# --- GET CONNECTION FROM POOL ---
+def get_db_connection():
+    if not engine:
+        print("Database engine is not initialized.")
+        return None
+    try:
+        conn = engine.connect()
+        return conn
+    except Exception as e:
+        print(f"Database Connection Pool Error: {e}")
+        traceback.print_exc()
+        return None
 
 # --- UPDATED: GET CONNECTION FROM POOL ---
 def get_db_connection():

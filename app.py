@@ -3384,24 +3384,3 @@ def api_check_duplicates_v2():
 # --- Main Execution ---
 if __name__ == '__main__':
     serve(app, host='0.0.0.0', port=5000)
-
-    # DANS app.py - AJOUTEZ CECI À LA TOUTE FIN DU FICHIER
-
-# --- Bloc de test de connexion ---
-if __name__ == '__main__':
-    print("--- LAUNCHING DATABASE CONNECTION TEST (standalone mode) ---")
-    test_conn = get_db_connection()
-    if test_conn:
-        try:
-            print("Connection object received. Executing simple query...")
-            result = test_conn.execute(text("SELECT @@VERSION;")).scalar()
-            print("--- !!! DATABASE CONNECTION SUCCESSFUL !!! ---")
-            print(f"SQL Server Version: {result}")
-            test_conn.close()
-        except Exception as e:
-            print(f"--- !!! DATABASE CONNECTION FAILED DURING QUERY !!! ---")
-            print(f"Error: {e}")
-    else:
-        print("--- !!! DATABASE CONNECTION FAILED. ENGINE COULD NOT CONNECT. !!! ---")
-    print("--- END OF DATABASE CONNECTION TEST ---")
-    # Le programme s'arrêtera ici car il n'y a pas de serve.run()

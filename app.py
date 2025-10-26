@@ -23,7 +23,7 @@ engine = None
 try:
     # Récupère la chaîne de connexion depuis les paramètres de l'application Azure
     # C'EST LE BON NOM DE VARIABLE CRÉÉ PAR LE SERVICE CONNECTOR
-    connection_string = os.environ.get('AZURE_SQL_CONNECTIONSTRING')
+    connection_string = os.environ.get("AZURE_SQL_CONNECTIONSTRING")
 
     if connection_string:
         # On doit spécifier le driver ODBC pour Azure App Service
